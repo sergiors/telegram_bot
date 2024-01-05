@@ -1,9 +1,15 @@
 FROM python:latest
 
-COPY requirements.txt requirements.txt
+RUN apt-get update && \
+    apt-get install -y locales && \
+    sed -i -e 's/# pt_BR.UTF-8 UTF-8/pt_BR.UTF-8 UTF-8/' /etc/locale.gen && \
+    dpkg-reconfigure --frontend=noninteractive locales
+
+COPY requirements.txt ./
 
 RUN pip install -r requirements.txt
 
-COPY . /app
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
 
-CMD ["python", "app/download.py"]
+CMD ["./docker-entrypoint.sh"]

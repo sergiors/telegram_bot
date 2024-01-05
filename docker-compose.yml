@@ -10,3 +10,16 @@ services:
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
       - ./redis-volume:/data
+
+  telegram_bot:
+    container_name: telegram_bot
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+    volumes:
+      - .:/app

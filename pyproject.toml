@@ -10,6 +10,9 @@ gspread = "^5.12.4"
 pydantic = "^2.5.3"
 pandas = "^2.1.4"
 pytelegrambotapi = "^4.14.1"
+rq = "^1.15.1"
+redis = "^5.0.1"
+aiohttp = "^3.9.1"
 
 
 [tool.poetry.group.dev.dependencies]

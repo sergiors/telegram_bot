@@ -1,14 +1,16 @@
 import re
 import csv
-from typing import Generator
 from enum import Enum
 from decimal import Decimal, ROUND_DOWN
+from datetime import date
+from dataclasses import dataclass
+
+from pydantic import BaseModel, ConfigDict
+
 from gspread import Worksheet
 from gspread.utils import ValueInputOption
-from dataclasses import dataclass
-from datetime import date
+
 from dateutils import next_month
-from pydantic import BaseModel, ConfigDict
 
 
 _DATE_FMT = '%Y-%m-%d'
@@ -50,7 +52,7 @@ class Category(str, Enum):
 class Bill(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
-    desc: str
+    text: str
     unitprice: Decimal
     date: date
     payment_method: PaymentMethod
@@ -64,7 +66,7 @@ class Bill(BaseModel):
         return [
             self.date.strftime(_DATE_FMT),
             valformula,
-            self.desc,
+            self.text,
             str(self.category),
             str(self.payment_method),
             self.split_it,
@@ -74,7 +76,7 @@ class Bill(BaseModel):
 @dataclass
 class Future:
     date: date
-    desc: str
+    text: str
     unitprice: Decimal
 
 
@@ -85,10 +87,10 @@ def _create_future_objs_from_desc(
 
     match = re.match(r'^([\s\S]+)(\d+)/(\d+)$', s)
     if not match:
-        return [Future(date=start_dt, desc=s, unitprice=_quantize(unitprice))]
+        return [Future(date=start_dt, text=s, unitprice=_quantize(unitprice))]
 
-    s_, start, stop = match.groups()
-    s_ = s_.rstrip()
+    text, start, stop = match.groups()
+    text = text.rstrip()
 
     next_dt = start_dt
     rows = []
@@ -97,7 +99,7 @@ def _create_future_objs_from_desc(
         rows.append(
             Future(
                 date=next_dt,
-                desc=f'{s_} {idx}/{stop}',
+                text=f'{text} {idx}/{stop}',
                 unitprice=_quantize(unitprice / int(stop)),
             )
         )
@@ -108,14 +110,14 @@ def _create_future_objs_from_desc(
 
 def append_row(wks: Worksheet, bill: Bill) -> dict:
     """Adds multiple rows to the worksheet"""
-    objs = _create_future_objs_from_desc(bill.desc, bill.date, bill.unitprice)
+    objs = _create_future_objs_from_desc(bill.text, bill.date, bill.unitprice)
     args = {
         'category': bill.category,
         'payment_method': bill.payment_method,
         'split_it': bill.split_it,
     }
     values = [
-        Bill(unitprice=x.unitprice, desc=x.desc, date=x.date, **args).asrow()
+        Bill(unitprice=x.unitprice, text=x.text, date=x.date, **args).asrow()
         for x in objs
     ]
 
@@ -126,14 +128,17 @@ def append_row(wks: Worksheet, bill: Bill) -> dict:
     )
 
 
-def get_all_records(wks: Worksheet) -> Generator[Bill, None, None]:
-    records = wks.get_all_records()
-    for record in records:
+def get_all_records(wks: Worksheet) -> list[Bill]:
+    records = []
+
+    for record in wks.get_all_records():
         record: dict
-        yield Bill(**record)
+        records.append(Bill(**record))
+
+    return records
 
 
-def copy_spreadsheet(filename: str, records: Generator[Bill, None, None]):
+def copy_spreadsheet(filename: str, records: list[Bill]):
     """Copy contents of the spreadsheet to local csv file"""
     fieldnames = [
         'date',
