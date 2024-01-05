@@ -12,17 +12,17 @@ def test_valid():
     expected = [
         Future(
             date=date(2023, 1, 1),
-            desc='iPhone 1/3',
+            text='iPhone 1/3',
             unitprice=frac_unitprice,
         ),
         Future(
             date=date(2023, 2, 1),
-            desc='iPhone 2/3',
+            text='iPhone 2/3',
             unitprice=frac_unitprice,
         ),
         Future(
             date=date(2023, 3, 1),
-            desc='iPhone 3/3',
+            text='iPhone 3/3',
             unitprice=frac_unitprice,
         ),
     ]
@@ -37,7 +37,7 @@ def test_does_not_future_objs():
     start_dt = date(2023, 1, 1)
 
     expected = [
-        Future(date=date(2023, 1, 1), desc='iPhone', unitprice=unitprice)
+        Future(date=date(2023, 1, 1), text='iPhone', unitprice=unitprice)
     ]
     actual = _create_future_objs_from_desc(s, start_dt, unitprice)
 
